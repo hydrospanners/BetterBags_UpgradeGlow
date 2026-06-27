@@ -5,5 +5,8 @@
 ## Version: 1.2.1
 ## Category: Inventory
 ## Dependencies: BetterBags
+# CurseForge: after you create the project, set the numeric id below and remove
+# the leading "# " so the packager uploads to the correct project:
+# ## X-Curse-Project-ID: 000000
 
 BetterBags_UpgradeGlow.lua
