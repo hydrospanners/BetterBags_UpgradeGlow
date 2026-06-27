@@ -2,11 +2,9 @@
 ## Title: BetterBags - Upgrade Glow
 ## Notes: Highlights bag ilvl upgrades and shows item upgrade track badges.
 ## Author: Hydrospanners
-## Version: 1.2.1
+## Version: 1.2.2
 ## Category: Inventory
 ## Dependencies: BetterBags
-# CurseForge: after you create the project, set the numeric id below and remove
-# the leading "# " so the packager uploads to the correct project:
-# ## X-Curse-Project-ID: 000000
+## X-Curse-Project-ID: 1590156
 
 BetterBags_UpgradeGlow.lua

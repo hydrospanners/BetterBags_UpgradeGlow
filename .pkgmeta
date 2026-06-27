@@ -6,7 +6,6 @@ enable-nolib-creation: no
 # Keep repo/meta files out of the distributed addon zip. WoW only needs the
 # .lua and .toc; everything below is for GitHub/CurseForge, not the game.
 ignore:
-  - .github
   - .pkgmeta
   - .publish-state.json
   - AGENTS.md
