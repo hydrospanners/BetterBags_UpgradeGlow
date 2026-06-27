@@ -1,0 +1,20 @@
+package-as: BetterBags_UpgradeGlow
+
+# This addon bundles no external libraries.
+enable-nolib-creation: no
+
+# Keep repo/meta files out of the distributed addon zip. WoW only needs the
+# .lua and .toc; everything below is for GitHub/CurseForge, not the game.
+ignore:
+  - .github
+  - .pkgmeta
+  - .publish-state.json
+  - AGENTS.md
+  - README.md
+  - CHANGELOG.md
+
+# CurseForge "Related Projects" can also be set in the project's web dashboard.
+# To declare it here instead, uncomment and confirm the slug matches the
+# BetterBags CurseForge URL (curseforge.com/wow/addons/<slug>):
+# required-dependencies:
+#   - betterbags
