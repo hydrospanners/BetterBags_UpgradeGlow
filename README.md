@@ -11,6 +11,12 @@ Champion, Hero, Myth, Void).
   replace.
 - Dual-slot aware: rings, trinkets, and weapons are checked against both slots,
   and main-hand two-handers are handled correctly for the off-hand.
+- Armor-type aware: only glows armor your class can actually wear, so a plate
+  wearer won't see mail light up (cloaks, rings, necks, and trinkets always count).
+- Weapon-proficiency aware: only glows weapons your class can equip, so a mage
+  won't see a two-handed axe (or a paladin a dagger) light up as an upgrade.
+- Ignores cosmetics: tabards and shirts never glow, even when they roll an item
+  level — they don't affect your gear.
 - Small colored track badge (Adv / Champ / Hero / Myth / Void) in the item
   corner, read from the item's upgrade tooltip line.
 - Updates live as you equip gear; persists through the bag "clear recent" action.
