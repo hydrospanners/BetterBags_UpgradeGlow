@@ -29,6 +29,8 @@ local TRACKS = {
     Hero = { label = "Hero", color = { 1.00, 0.55, 0.15 } },
     Myth = { label = "Myth", color = { 1.00, 0.20, 0.20 } },
     Void = { label = "Void", color = { 0.55, 0.20, 0.85 } },
+    Spore = { label = "Spore", color = { 0.15, 0.65, 0.30 } },
+    Craft = { label = "Craft", color = { 1.00, 0.80, 0.20 } },
 }
 
 local TRACK_ORDER = {
@@ -104,12 +106,26 @@ local function getUpgradeTrack(data)
     local tooltipData = C_TooltipInfo.GetBagItem(data.bagid, data.slotid)
     if not tooltipData or not tooltipData.lines then return nil end
 
-    for _, line in ipairs(tooltipData.lines) do
-        if line.type == TRACK_LINE_TYPE then
-            return findUpgradeTrackText(line.leftText) or findUpgradeTrackText(line.rightText)
+    -- Sporefused ("Sporefused: Myth") and season-crafted ("Radiance Crafted")
+    -- gear has no ItemUpgradeLevel line, so those are matched on plain tooltip
+    -- text. Sporefused tooltips can also carry a "Mythic" difficulty line, so
+    -- Spore/Craft win over a track hit. Line 1 is skipped: that's the item
+    -- name, and an item can be *named* "Sporefused ..." without being one.
+    local trackFromLine
+    for i, line in ipairs(tooltipData.lines) do
+        if i > 1 and line.leftText then
+            -- Plain finds only: leftText can carry embedded color codes and
+            -- even multiple visual lines (the Sporefused line arrives as
+            -- "Mythic\nSporefused: Myth"), so end-anchored patterns like
+            -- "Crafted$" never match ("...Crafted|r").
+            if line.leftText:find("Sporefused", 1, true) then return "Spore" end
+            if line.leftText:find("Crafted", 1, true) then return "Craft" end
+        end
+        if not trackFromLine and line.type == TRACK_LINE_TYPE then
+            trackFromLine = findUpgradeTrackText(line.leftText) or findUpgradeTrackText(line.rightText)
         end
     end
-    return nil
+    return trackFromLine
 end
 
 local function updateTrackText(data, decoration)
@@ -296,6 +312,48 @@ eqFrame:SetScript("OnEvent", function()
 end)
 
 events:RegisterMessage("item/Updated", updateGlow)
+
+-- Debug: /bbug <item name substring> dumps the raw C_TooltipInfo lines and
+-- item link for the first matching bag item. The on-screen tooltip can contain
+-- display-layer lines that are absent from the raw data, so badge detection
+-- must be verified against this dump, not against what the tooltip shows.
+local issecret = issecretvalue or function() return false end
+local function safeText(v)
+    if v == nil then return "-" end
+    if issecret(v) then return "<secret>" end
+    return tostring(v)
+end
+
+SLASH_BBUPGRADEGLOW1 = "/bbug"
+SlashCmdList.BBUPGRADEGLOW = function(msg)
+    msg = (msg or ""):gsub("^%s+", ""):gsub("%s+$", ""):lower()
+    if msg == "" then
+        print("UpgradeGlow: usage /bbug <item name substring>")
+        return
+    end
+    for bag = 0, 5 do
+        for slot = 1, C_Container.GetContainerNumSlots(bag) or 0 do
+            local info = C_Container.GetContainerItemInfo(bag, slot)
+            local link = info and info.hyperlink
+            local name = link and link:match("%[(.-)%]")
+            if name and name:lower():find(msg, 1, true) then
+                print("UpgradeGlow dump: " .. name .. " (bag " .. bag .. ", slot " .. slot .. ")")
+                print("link: " .. link:gsub("|", "||"))
+                local td = C_TooltipInfo.GetBagItem(bag, slot)
+                if td and td.lines then
+                    for i, line in ipairs(td.lines) do
+                        print(i .. " [type " .. safeText(line.type) .. "] " ..
+                            safeText(line.leftText) .. " / " .. safeText(line.rightText))
+                    end
+                else
+                    print("no tooltip data")
+                end
+                return
+            end
+        end
+    end
+    print("UpgradeGlow: no bag item matching '" .. msg .. "'")
+end
 
 -- Refresh once after load so already-open bags get glows
 local loadFrame = CreateFrame("Frame")
