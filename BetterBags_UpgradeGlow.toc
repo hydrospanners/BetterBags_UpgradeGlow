@@ -1,8 +1,8 @@
-## Interface: 120005
+## Interface: 120007
 ## Title: BetterBags - Upgrade Glow
 ## Notes: Highlights bag ilvl upgrades and shows item upgrade track badges.
 ## Author: Hydrospanners
-## Version: 1.2.4
+## Version: 1.3.0
 ## Category: Inventory
 ## Dependencies: BetterBags
 ## X-Curse-Project-ID: 1590156

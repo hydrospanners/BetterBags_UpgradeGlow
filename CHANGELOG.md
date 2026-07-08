@@ -2,6 +2,12 @@
 
 All notable changes to BetterBags - Upgrade Glow are listed here.
 
+## [1.3.0]
+
+- New badges for gear without an upgrade track: Sporefused items show a dark
+  green "Spore" and season-crafted items (e.g. "Radiance Crafted") show a
+  gold "Craft". These previously showed no badge at all.
+
 ## [1.2.4]
 
 - Only glow weapons you can actually equip: weapon types your class can't use
