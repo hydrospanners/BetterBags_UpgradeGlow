@@ -3,6 +3,14 @@ package-as: BetterBags_UpgradeGlow
 # This addon bundles no external libraries.
 enable-nolib-creation: no
 
+# Use the hand-written changelog as the CurseForge file changelog instead of
+# the packager's auto-generated git log (staging commits are just
+# "release: vX.Y.Z", which tells users nothing). The ignore list below still
+# keeps CHANGELOG.md out of the addon zip itself.
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
 # Keep repo/meta files out of the distributed addon zip. WoW only needs the
 # .lua and .toc; everything below is for GitHub/CurseForge, not the game.
 ignore:
