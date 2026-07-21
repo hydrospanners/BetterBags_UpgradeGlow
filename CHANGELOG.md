@@ -2,6 +2,23 @@
 
 All notable changes to BetterBags - Upgrade Glow are listed here.
 
+## [1.3.1]
+
+- Unique-equipped duplicates no longer glow: when a copy of a unique ring or
+  trinket is already worn, a second copy only glows if it beats the equipped
+  copy itself (the only slot it can legally go), not the other slot. Getting
+  the same trinket twice as loot no longer lights up a fake upgrade.
+- Off-hand weapon comparisons now require dual wield: on characters that
+  can't dual-wield, a one-hander no longer glows just because it out-levels a
+  shield, an off-hand frill, or an empty off-hand slot. Re-evaluated on spec
+  change.
+- Guns and crossbows in the main hand now block off-hand weapon glows, like
+  bows and two-handers already did. Wands still allow off-hand comparisons.
+- Shields only glow for classes that can use them (Warrior, Paladin, Shaman).
+- Items above your character's level no longer glow until you can equip them.
+- Items BetterBags can't map to an equipment slot (e.g. profession tools) no
+  longer glow unconditionally.
+
 ## [1.3.0]
 
 - New badges for gear without an upgrade track: Sporefused items show a dark

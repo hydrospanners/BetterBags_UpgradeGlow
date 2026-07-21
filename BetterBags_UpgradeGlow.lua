@@ -239,13 +239,77 @@ local function isUnusableWeapon(data)
     return denied ~= nil and denied[playerClassFile] == true
 end
 
+-- Shields sit outside both filters above: armor, but not in a gated armor
+-- slot, and not a weapon. Denied classes ported verbatim from RCLootCouncil's
+-- autopass table (usable by Warrior, Paladin, Shaman only).
+local SHIELD_AUTOPASS = { DEATHKNIGHT = true, DRUID = true, MONK = true, ROGUE = true, HUNTER = true, PRIEST = true, MAGE = true, WARLOCK = true, DEMONHUNTER = true, EVOKER = true }
+
+local function isUnusableShield(data)
+    local info = data.itemInfo
+    if not info or info.classID ~= Enum.ItemClass.Armor then return false end
+    if info.subclassID ~= Enum.ItemArmorSubclass.Shield then return false end
+    return SHIELD_AUTOPASS[playerClassFile] == true
+end
+
+-- An item above the character's level can't be equipped yet -> never glow it.
+local function isLevelLocked(data)
+    return (data.itemInfo.itemMinLevel or 0) > UnitLevel("player")
+end
+
+local OTHER_PAIR_SLOT = {
+    [INVSLOT_FINGER1] = INVSLOT_FINGER2,
+    [INVSLOT_FINGER2] = INVSLOT_FINGER1,
+    [INVSLOT_TRINKET1] = INVSLOT_TRINKET2,
+    [INVSLOT_TRINKET2] = INVSLOT_TRINKET1,
+    [INVSLOT_MAINHAND] = INVSLOT_OFFHAND,
+    [INVSLOT_OFFHAND] = INVSLOT_MAINHAND,
+}
+
+-- True when at most one copy of the item can be worn (plain "Unique" or
+-- "Unique-Equipped"). Category limits of 2+ (e.g. "Unique-Equipped:
+-- Embellished (2)") allow a second copy, so they don't count.
+local function isUniqueEquipped(data)
+    if not C_Item.GetItemUniquenessByID then return false end
+    local isUnique, _, limitCount = C_Item.GetItemUniquenessByID(data.itemInfo.itemLink)
+    return isUnique == true and (limitCount == nil or limitCount <= 1)
+end
+
 local function isUpgradeForSlot(bagData, slot)
+    -- Inventory types BetterBags can't map arrive as slot 0 (e.g. profession
+    -- tools); without this guard they'd compare against nil -> ilvl 0 -> glow.
+    if slot < INVSLOT_FIRST_EQUIPPED or slot > INVSLOT_LAST_EQUIPPED then
+        return false
+    end
+
     if slot == INVSLOT_OFFHAND then
+        -- A weapon in the off-hand needs dual wield (spec-dependent); shields
+        -- and held-in-off-hand items don't.
+        if bagData.itemInfo.classID == Enum.ItemClass.Weapon and not CanDualWield() then
+            return false
+        end
+        -- A 2H or ranged main hand blocks the off-hand slot entirely. Wands
+        -- are INVTYPE_RANGEDRIGHT too but don't block it, so they still allow
+        -- off-hand frill comparisons.
         local mainhand = items:GetItemDataFromInventorySlot(INVSLOT_MAINHAND)
         if mainhand and mainhand.itemInfo and (
             mainhand.itemInfo.itemEquipLoc == "INVTYPE_2HWEAPON" or
-            mainhand.itemInfo.itemEquipLoc == "INVTYPE_RANGED"
+            mainhand.itemInfo.itemEquipLoc == "INVTYPE_RANGED" or
+            (mainhand.itemInfo.itemEquipLoc == "INVTYPE_RANGEDRIGHT" and
+                mainhand.itemInfo.subclassID ~= Enum.ItemWeaponSubclass.Wand)
         ) then
+            return false
+        end
+    end
+
+    -- A unique-equipped item can't sit next to a copy of itself: when its twin
+    -- slot holds the same item, the only legal move is swapping into that
+    -- copy's own slot, so this slot's comparison is void. (Covers getting the
+    -- same trinket twice as loot.)
+    local otherSlot = OTHER_PAIR_SLOT[slot]
+    if otherSlot then
+        local other = items:GetItemDataFromInventorySlot(otherSlot)
+        if other and other.itemInfo and other.itemInfo.itemID == bagData.itemInfo.itemID
+            and isUniqueEquipped(bagData) then
             return false
         end
     end
@@ -282,7 +346,8 @@ local function updateGlow(_, item, decoration)
     updateTrackText(data, decoration)
 
     local show = false
-    if not isWrongArmorType(data) and not isUnusableWeapon(data) then
+    if not isWrongArmorType(data) and not isUnusableWeapon(data)
+        and not isUnusableShield(data) and not isLevelLocked(data) then
         for _, slot in pairs(data.inventorySlots) do
             if isUpgradeForSlot(data, slot) then
                 show = true
@@ -307,6 +372,8 @@ end
 
 local eqFrame = CreateFrame("Frame")
 eqFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+-- Dual wield is spec-dependent, so off-hand glows must re-evaluate on respec.
+eqFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 eqFrame:SetScript("OnEvent", function()
     events:SendMessage(ctx, "bags/FullRefreshAll")
 end)
