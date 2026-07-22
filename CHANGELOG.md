@@ -2,6 +2,10 @@
 
 All notable changes to BetterBags - Upgrade Glow are listed here.
 
+## [1.3.2]
+
+- Marked compatible with 12.1 alongside 12.0.7. Support for 12.0.5 is dropped.
+
 ## [1.3.1]
 
 - Unique-equipped duplicates no longer glow: when a copy of a unique ring or
