@@ -20,6 +20,8 @@ Champion, Hero, Myth, Void).
 - Small colored track badge (Adv / Champ / Hero / Myth / Void) in the item
   corner, read from the item's upgrade tooltip line.
 - Updates live as you equip gear; persists through the bag "clear recent" action.
+- Configurable: every part can be turned off, recoloured, renamed, or moved out
+  of the way of other addons. See [Settings](#settings).
 
 ## Requirements
 
@@ -39,8 +41,21 @@ Install via the CurseForge app, or manually:
 
 ## Usage
 
-There's nothing to configure — once BetterBags and this module are enabled, open
-your bags and upgrades light up automatically.
+Once BetterBags and this module are enabled, open your bags and upgrades light
+up automatically.
+
+## Settings
+
+Type `/bb`, open **Plugins → Upgrade Glow**. You can:
+
+- Turn the glow and the track badges off independently.
+- Change the glow colour and opacity.
+- Move the badge to a different corner if it covers an icon from another
+  BetterBags plugin or theme.
+- Rename and recolour each track. Clear a track's text to hide it, so you can
+  badge only the ranks you care about.
+
+Settings are saved account-wide.
 
 ## License
 

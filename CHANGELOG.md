@@ -2,6 +2,18 @@
 
 All notable changes to BetterBags - Upgrade Glow are listed here.
 
+## [1.4.0]
+
+- Added a settings panel under BetterBags options ("Upgrade Glow" in the
+  Plugins section). Nothing is forced on any more:
+  - Glow and track badges can each be turned off on their own.
+  - The glow colour and opacity can be changed.
+  - The badge can be moved to any corner of the item, so it stops covering
+    icons drawn by other BetterBags plugins and themes.
+  - Every track's badge text and colour can be edited. Clearing a track's text
+    hides that track, so you can show only the ranks you care about.
+- Settings are saved account-wide.
+
 ## [1.3.2]
 
 - Marked compatible with 12.1 alongside 12.0.7. Support for 12.0.5 is dropped.

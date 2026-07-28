@@ -8,12 +8,25 @@ if not BetterBags then return end
 local items = BetterBags:GetModule("Items")
 local events = BetterBags:GetModule("Events")
 local context = BetterBags:GetModule("Context")
+local config = BetterBags:GetModule("Config")
 
 local ctx = context:New("UpgradeGlow")
 
 local GLOW_LAYER = "OVERLAY"
+-- The only glow atlas we rely on. BetterBags itself uses it for the "new item"
+-- flash, so it is known to exist; any colour comes from SetVertexColor rather
+-- than from a differently-named atlas.
 local GLOW_ATLAS = "bags-glow-white"
 local TRACK_LINE_TYPE = Enum.TooltipDataLineType and Enum.TooltipDataLineType.ItemUpgradeLevel or 32
+
+-- Where the track badge sits on the item button. Configurable because other
+-- BetterBags plugins and themes draw their own icons on these corners.
+local BADGE_POINTS = {
+    { label = "Top right", point = "TOPRIGHT", x = -2, y = -2 },
+    { label = "Top left", point = "TOPLEFT", x = 2, y = -2 },
+    { label = "Bottom right", point = "BOTTOMRIGHT", x = -2, y = 2 },
+    { label = "Bottom left", point = "BOTTOMLEFT", x = 2, y = 2 },
+}
 
 -- Ascendant Voidforged bonus IDs (Midnight 12.x); see ChonkyCharacterSheet gearDB for reference.
 local VOIDFORGED_BONUS_IDS = {
@@ -43,6 +56,45 @@ local TRACK_ORDER = {
     "Myth",
 }
 
+-- Tracks in the order they're offered in the options panel.
+local TRACK_SETTINGS_ORDER = {
+    "Explorer", "Adventurer", "Veteran", "Champion", "Hero", "Myth", "Void", "Spore", "Craft",
+}
+
+-- Saved settings. `db` is swapped for the real saved table on ADDON_LOADED;
+-- every closure below reads the upvalue, so they follow it.
+local db = {}
+
+local function applyDefaults(t)
+    if t.enableGlow == nil then t.enableGlow = true end
+    if t.enableBadges == nil then t.enableBadges = true end
+    t.glowColor = t.glowColor or { 1, 1, 1, 1 }
+    t.badgePoint = t.badgePoint or "TOPRIGHT"
+    t.trackLabels = t.trackLabels or {}
+    t.trackColors = t.trackColors or {}
+end
+
+applyDefaults(db)
+
+-- An empty label hides that track's badge, so this doubles as a per-track toggle.
+local function trackLabel(name)
+    local custom = db.trackLabels[name]
+    if custom then return custom end
+    return TRACKS[name].label
+end
+
+local function trackColor(name)
+    local c = db.trackColors[name] or TRACKS[name].color
+    return c[1], c[2], c[3], c[4] or 1
+end
+
+local function badgeAnchor()
+    for _, entry in ipairs(BADGE_POINTS) do
+        if entry.point == db.badgePoint then return entry end
+    end
+    return BADGE_POINTS[1]
+end
+
 local function ensureGlowTexture(decoration)
     if decoration.UpgradeGlowTex then return decoration.UpgradeGlowTex end
     local tex = decoration:CreateTexture(nil, GLOW_LAYER)
@@ -56,9 +108,9 @@ end
 local function ensureTrackText(decoration)
     if decoration.UpgradeGlowTrackText then return decoration.UpgradeGlowTrackText end
 
+    -- Anchoring happens in updateTrackText so a corner change applies to
+    -- buttons whose font string already exists.
     local text = decoration:CreateFontString(nil, GLOW_LAYER, "NumberFontNormalSmall")
-    text:SetPoint("TOPRIGHT", decoration, "TOPRIGHT", -2, -2)
-    text:SetJustifyH("RIGHT")
     text:SetShadowColor(0, 0, 0, 1)
     text:SetShadowOffset(1, -1)
     decoration.UpgradeGlowTrackText = text
@@ -128,19 +180,37 @@ local function getUpgradeTrack(data)
     return trackFromLine
 end
 
+local function hideTrackText(decoration)
+    if decoration.UpgradeGlowTrackText then
+        decoration.UpgradeGlowTrackText:Hide()
+    end
+end
+
 local function updateTrackText(data, decoration)
-    local trackName = getUpgradeTrack(data)
-    local track = trackName and TRACKS[trackName]
-    if not track then
-        if decoration.UpgradeGlowTrackText then
-            decoration.UpgradeGlowTrackText:Hide()
-        end
+    if not db.enableBadges then
+        hideTrackText(decoration)
         return
     end
 
+    local trackName = getUpgradeTrack(data)
+    if not trackName or not TRACKS[trackName] then
+        hideTrackText(decoration)
+        return
+    end
+
+    local label = trackLabel(trackName)
+    if label == "" then
+        hideTrackText(decoration)
+        return
+    end
+
+    local anchor = badgeAnchor()
     local text = ensureTrackText(decoration)
-    text:SetText(track.label)
-    text:SetTextColor(track.color[1], track.color[2], track.color[3], 1)
+    text:ClearAllPoints()
+    text:SetPoint(anchor.point, decoration, anchor.point, anchor.x, anchor.y)
+    text:SetJustifyH(anchor.point:find("RIGHT") and "RIGHT" or "LEFT")
+    text:SetText(label)
+    text:SetTextColor(trackColor(trackName))
     text:Show()
 end
 
@@ -346,7 +416,7 @@ local function updateGlow(_, item, decoration)
     updateTrackText(data, decoration)
 
     local show = false
-    if not isWrongArmorType(data) and not isUnusableWeapon(data)
+    if db.enableGlow and not isWrongArmorType(data) and not isUnusableWeapon(data)
         and not isUnusableShield(data) and not isLevelLocked(data) then
         for _, slot in pairs(data.inventorySlots) do
             if isUpgradeForSlot(data, slot) then
@@ -358,12 +428,236 @@ local function updateGlow(_, item, decoration)
 
     if show then
         local tex = ensureGlowTexture(decoration)
+        local c = db.glowColor
+        tex:SetVertexColor(c[1], c[2], c[3], c[4] or 1)
         tex:Show()
     else
         if decoration.UpgradeGlowTex then
             decoration.UpgradeGlowTex:Hide()
         end
     end
+end
+
+-- Options
+--
+-- BetterBags' AddPluginConfig flattens the options table and walks it with
+-- pairs(), so an entry per setting comes out in a scrambled order. Instead we
+-- hand it a single entry whose name function builds the whole panel against
+-- config.configFrame, which keeps the settings in the order written here.
+-- (Same hook BetterBags_iLvl uses for its slider.)
+
+local refreshTimer
+local function refresh()
+    if refreshTimer then refreshTimer:Cancel() end
+    -- The colour picker fires on every swatch drag, so coalesce the redraws.
+    refreshTimer = C_Timer.NewTimer(0.2, function()
+        refreshTimer = nil
+        events:SendMessage(ctx, "bags/FullRefreshAll")
+    end)
+end
+
+-- BetterBags anchors a colour swatch in the left gutter (x=0), matching where
+-- it puts checkboxes. That reads fine in a run of checkboxes, but here the
+-- swatches sit among input boxes whose text column starts at x=37, so a
+-- gutter swatch looks stranded to the left of everything it belongs to.
+-- Pull it into the text column instead. Guarded so a BetterBags layout change
+-- falls back to the stock position rather than erroring.
+local CONTENT_INDENT = 37
+
+local function addAlignedColor(f, opts)
+    f:AddColor(opts)
+    local container = config.configFrame.layout and config.configFrame.layout.nextFrame
+    if container and container.colorPicker then
+        container.colorPicker:ClearAllPoints()
+        container.colorPicker:SetPoint("TOPLEFT", container, "TOPLEFT", CONTENT_INDENT, 0)
+    end
+end
+
+-- Swatch size matches the input box height so the two sit on one line.
+local SWATCH_SIZE = 20
+-- Blizzard's round colour-swatch texture, as used by BetterBags' own AddColor.
+local SWATCH_TEXTURE = 5014189
+local SWATCH_MASK = "Interface/CHARACTERFRAME/TempPortraitAlphaMask"
+
+-- Track name -> swatch texture, so the reset button can repaint swatches we
+-- built ourselves (BetterBags' ReloadAllFormElements only knows its own).
+local trackSwatches = {}
+
+-- One row per track: the text box and its colour swatch side by side, so a
+-- track reads as a single setting instead of two unrelated controls. BetterBags
+-- has no combined widget, so the swatch is built into the input box's own
+-- container. If that container ever stops exposing .input we fall back to a
+-- separate colour row rather than dropping the control.
+local function addTrackRow(f, name)
+    f:AddInputBox({
+        title = name,
+        description = "",
+        getValue = function() return trackLabel(name) end,
+        setValue = function(_, value)
+            db.trackLabels[name] = value
+            refresh()
+        end,
+    })
+
+    local container = config.configFrame.layout and config.configFrame.layout.nextFrame
+    if not container or not container.input then
+        addAlignedColor(f, {
+            title = name .. " colour",
+            description = "",
+            getValue = function()
+                local r, g, b, a = trackColor(name)
+                return { red = r, green = g, blue = b, alpha = a }
+            end,
+            setValue = function(_, value)
+                db.trackColors[name] = { value.red, value.green, value.blue, value.alpha }
+                refresh()
+            end,
+        })
+        return
+    end
+
+    -- Free up room at the end of the input row for the swatch. Re-anchoring
+    -- RIGHT replaces the full-width anchor AddInputBox set.
+    container.input:SetPoint("RIGHT", container, "RIGHT", -(SWATCH_SIZE + 13), 0)
+
+    local swatch = CreateFrame("Frame", nil, container)
+    swatch:SetSize(SWATCH_SIZE, SWATCH_SIZE)
+    swatch:SetPoint("LEFT", container.input, "RIGHT", 8, 0)
+    -- A bare Frame takes no mouse input until asked, so OnMouseDown below
+    -- would never fire without this.
+    swatch:EnableMouse(true)
+
+    local tex = swatch:CreateTexture(nil, "ARTWORK")
+    tex:SetAllPoints()
+    tex:SetTexture(SWATCH_TEXTURE)
+    local mask = swatch:CreateMaskTexture()
+    mask:SetAllPoints(tex)
+    mask:SetTexture(SWATCH_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    tex:AddMaskTexture(mask)
+    tex:SetVertexColor(trackColor(name))
+    trackSwatches[name] = tex
+
+    local function apply(r, g, b, a)
+        db.trackColors[name] = { r, g, b, a }
+        tex:SetVertexColor(r, g, b, a)
+        refresh()
+    end
+
+    local function fromPicker()
+        local r, g, b = ColorPickerFrame:GetColorRGB()
+        apply(r, g, b, ColorPickerFrame:GetColorAlpha())
+    end
+
+    swatch:SetScript("OnMouseDown", function()
+        -- Captured before the picker opens so Cancel can put it back; the
+        -- stock BetterBags colour rows just keep whatever you dragged to.
+        local r, g, b, a = trackColor(name)
+        ColorPickerFrame:SetupColorPickerAndShow({
+            swatchFunc = fromPicker,
+            opacityFunc = fromPicker,
+            cancelFunc = function() apply(r, g, b, a) end,
+            hasOpacity = true,
+            opacity = a,
+            r = r, g = g, b = b,
+        })
+    end)
+end
+
+local function badgePointLabels()
+    local labels = {}
+    for _, entry in ipairs(BADGE_POINTS) do
+        table.insert(labels, entry.label)
+    end
+    return labels
+end
+
+local function buildPanel()
+    local f = config.configFrame
+
+    f:AddInlineSubSection({
+        title = "Upgrade glow",
+        description = "Glows bag items with a higher item level than the one you have equipped.",
+    })
+
+    f:AddCheckbox({
+        title = "Show upgrade glow",
+        description = "Turn the glow off to keep only the track badges.",
+        getValue = function() return db.enableGlow end,
+        setValue = function(_, value)
+            db.enableGlow = value
+            refresh()
+        end,
+    })
+
+    addAlignedColor(f, {
+        title = "Glow colour",
+        description = "Colour and opacity of the glow.",
+        getValue = function()
+            local c = db.glowColor
+            return { red = c[1], green = c[2], blue = c[3], alpha = c[4] or 1 }
+        end,
+        setValue = function(_, value)
+            db.glowColor = { value.red, value.green, value.blue, value.alpha }
+            refresh()
+        end,
+    })
+
+    f:AddInlineSubSection({
+        title = "Track badges",
+        description = "The small track label drawn in the corner of an item.",
+    })
+
+    f:AddCheckbox({
+        title = "Show track badges",
+        description = "Turn the badges off to keep only the glow.",
+        getValue = function() return db.enableBadges end,
+        setValue = function(_, value)
+            db.enableBadges = value
+            refresh()
+        end,
+    })
+
+    f:AddDropdown({
+        title = "Badge corner",
+        description = "Move the badge if it covers an icon drawn by another addon.",
+        items = badgePointLabels(),
+        getValue = function(_, value) return value == badgeAnchor().label end,
+        setValue = function(_, value)
+            for _, entry in ipairs(BADGE_POINTS) do
+                if entry.label == value then
+                    db.badgePoint = entry.point
+                    break
+                end
+            end
+            refresh()
+        end,
+    })
+
+    f:AddInlineSubSection({
+        title = "Badge text and colours",
+        description = "Rename or recolour each track. Clear the text to hide that track entirely.",
+    })
+
+    for _, name in ipairs(TRACK_SETTINGS_ORDER) do
+        addTrackRow(f, name)
+    end
+
+    f:AddButtonGroup({
+        ButtonOptions = { {
+            title = "Reset badge text and colours",
+            onClick = function()
+                wipe(db.trackLabels)
+                wipe(db.trackColors)
+                -- Repaints BetterBags' own widgets; our swatches aren't
+                -- registered with it, so they're repainted here.
+                config.configFrame:ReloadAllFormElements()
+                for trackName, tex in pairs(trackSwatches) do
+                    tex:SetVertexColor(trackColor(trackName))
+                end
+                refresh()
+            end,
+        } },
+    })
 end
 
 -- We do not subscribe to item/Clearing so the upgrade glow is not reset when
@@ -422,12 +716,23 @@ SlashCmdList.BBUPGRADEGLOW = function(msg)
     print("UpgradeGlow: no bag item matching '" .. msg .. "'")
 end
 
--- Refresh once after load so already-open bags get glows
+-- Load saved settings, register the options panel, and refresh once so bags
+-- that are already open pick up the glows.
 local loadFrame = CreateFrame("Frame")
 loadFrame:RegisterEvent("ADDON_LOADED")
 loadFrame:SetScript("OnEvent", function(_, _, name)
     if name == addonName then
         loadFrame:UnregisterEvent("ADDON_LOADED")
+
+        BetterBags_UpgradeGlowDB = BetterBags_UpgradeGlowDB or {}
+        db = BetterBags_UpgradeGlowDB
+        applyDefaults(db)
+
+        -- One entry: its name function builds the panel in order. See buildPanel.
+        config:AddPluginConfig("Upgrade Glow", {
+            panel = { name = function() buildPanel() end },
+        })
+
         C_Timer.After(0.2, function()
             events:SendMessage(ctx, "bags/FullRefreshAll")
         end)
