@@ -1,12 +1,19 @@
 name: Package and release to CurseForge
 
-# Runs when a version tag is pushed (e.g. v1.2.2). Your existing publish
+# Runs when a version tag is pushed (e.g. v0.8.0). Your existing publish
 # pipeline already creates the tag + GitHub Release; this workflow only
 # adds the CurseForge upload on top of it.
+#
+# workflow_dispatch is the manual door (added 2026-07-23): a tag pushed with
+# plain `git push origin <tag>` did not fire the push trigger for v0.10.0,
+# while every earlier tag — created server-side by `gh release create` — did.
+# Run it from the Actions tab (or `gh workflow run release.yml --ref <tag>`)
+# and pick the TAG as the ref, so the packager reads the right version.
 on:
   push:
     tags:
       - '*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (full history for changelog)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

@@ -15,14 +15,15 @@ manual-changelog:
 # .lua and .toc; everything below is for GitHub/CurseForge, not the game.
 ignore:
   - .github
+  - .gitignore
   - .pkgmeta
   - .publish-state.json
   - AGENTS.md
   - README.md
   - CHANGELOG.md
 
-# CurseForge "Related Projects" can also be set in the project's web dashboard.
-# To declare it here instead, uncomment and confirm the slug matches the
-# BetterBags CurseForge URL (curseforge.com/wow/addons/<slug>):
-# required-dependencies:
-#   - betterbags
+# CurseForge Relations: BetterBags is required (this is a plugin module).
+# Slug verified against curseforge.com/wow/addons/better-bags (id 942432,
+# 2026-07-29). Takes effect on each new upload.
+required-dependencies:
+  - better-bags
