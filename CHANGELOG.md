@@ -2,6 +2,10 @@
 
 All notable changes to BetterBags - Upgrade Glow are listed here.
 
+## [1.4.1]
+
+- Marked compatible with patch 12.1. No behavior changes.
+
 ## [1.4.0]
 
 - Added a settings panel under BetterBags options ("Upgrade Glow" in the
