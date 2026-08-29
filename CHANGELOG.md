@@ -2,6 +2,14 @@
 
 All notable changes to BetterBags - Upgrade Glow are listed here.
 
+## [1.5.0]
+
+- New badges for the special gear from The Venomous Abyss: Venomcursed cantrip
+  armor (last two bosses) shows an acid-green "Venom", and the raid's Corrosive
+  effect items show a teal "Corr". Like every other track, both can be renamed,
+  recoloured, or hidden in settings.
+- Season 2 crafted gear ("Tidal Crafted") already gets the "Craft" badge.
+
 ## [1.4.1]
 
 - Marked compatible with patch 12.1. No behavior changes.

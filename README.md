@@ -3,7 +3,8 @@
 A [BetterBags](https://www.curseforge.com/wow/addons/better-bags) module that
 makes bag items **glow when they're an item-level upgrade** over what you have
 equipped, and tags each upgrade with its **upgrade track** (Adventurer,
-Champion, Hero, Myth, Void).
+Champion, Hero, Myth) or **special-gear badge** (Voidforged, Sporefused,
+Venomcursed, Corrosive, season-crafted).
 
 ## Features
 
@@ -17,8 +18,11 @@ Champion, Hero, Myth, Void).
   won't see a two-handed axe (or a paladin a dagger) light up as an upgrade.
 - Ignores cosmetics: tabards and shirts never glow, even when they roll an item
   level — they don't affect your gear.
-- Small colored track badge (Adv / Champ / Hero / Myth / Void) in the item
-  corner, read from the item's upgrade tooltip line.
+- Small colored track badge (Adv / Champ / Hero / Myth) in the item corner,
+  read from the item's upgrade tooltip line.
+- Special gear gets its own badge: "Void" (Ascendant Voidforged), "Spore"
+  (Sporefused), "Craft" (season-crafted), "Venom" (Venomcursed), and "Corr"
+  (Corrosive, the other Venomous Abyss cantrip items).
 - Updates live as you equip gear; persists through the bag "clear recent" action.
 - Configurable: every part can be turned off, recoloured, renamed, or moved out
   of the way of other addons. See [Settings](#settings).

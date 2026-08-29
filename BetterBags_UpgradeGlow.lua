@@ -34,6 +34,29 @@ local VOIDFORGED_BONUS_IDS = {
     [13654] = true, -- Myth-track Voidforged
 }
 
+-- Season 2 cantrip gear from The Venomous Abyss; IDs from raidbots
+-- https://www.raidbots.com/static/data/live/bonuses.json (same source as the
+-- Voidforged IDs). Venomcursed: the very-rare Myth 9 armor from the last two
+-- bosses, one bonus ID per stat cantrip.
+local VENOMCURSED_BONUS_IDS = {
+    [13708] = true, -- Venomcursed Critical Strike
+    [13846] = true, -- Venomcursed Mastery
+    [13847] = true, -- Venomcursed Haste
+    [13987] = true, -- Venomcursed Ascendance
+}
+
+-- Corrosive: the raid's Ula'tek-themed special-effect items. Bonus ID only, no
+-- tooltip text fallback — "Corrosive" also appears in these items' own effect
+-- text and can appear on unrelated items, so a plain text find would
+-- false-positive where the bonus ID cannot.
+local CORROSIVE_BONUS_IDS = {
+    [13731] = true, [13732] = true, [13734] = true, [13735] = true,
+    [13736] = true, [13737] = true, [13738] = true, [13739] = true,
+    [13741] = true, [13742] = true, [13743] = true, [13744] = true,
+    [13745] = true, [13746] = true, [13829] = true, [13830] = true,
+    [13831] = true, [13832] = true, [13833] = true, [13834] = true,
+}
+
 local TRACKS = {
     Explorer = { label = "Exp", color = { 0.62, 0.62, 0.62 } },
     Adventurer = { label = "Adv", color = { 0.20, 0.95, 0.35 } },
@@ -43,6 +66,8 @@ local TRACKS = {
     Myth = { label = "Myth", color = { 1.00, 0.20, 0.20 } },
     Void = { label = "Void", color = { 0.55, 0.20, 0.85 } },
     Spore = { label = "Spore", color = { 0.15, 0.65, 0.30 } },
+    Venom = { label = "Venom", color = { 0.65, 1.00, 0.25 } },
+    Corrosive = { label = "Corr", color = { 0.10, 0.75, 0.55 } },
     Craft = { label = "Craft", color = { 1.00, 0.80, 0.20 } },
 }
 
@@ -58,7 +83,7 @@ local TRACK_ORDER = {
 
 -- Tracks in the order they're offered in the options panel.
 local TRACK_SETTINGS_ORDER = {
-    "Explorer", "Adventurer", "Veteran", "Champion", "Hero", "Myth", "Void", "Spore", "Craft",
+    "Explorer", "Adventurer", "Veteran", "Champion", "Hero", "Myth", "Void", "Spore", "Venom", "Corrosive", "Craft",
 }
 
 -- Saved settings. `db` is swapped for the real saved table on ADDON_LOADED;
@@ -126,11 +151,11 @@ local function hideDecorations(decoration)
     end
 end
 
-local function isVoidforgedItem(data)
+local function hasAnyBonusID(data, wanted)
     local linkInfo = data.itemLinkInfo
     if not linkInfo or not linkInfo.bonusIDs then return false end
     for _, bonusID in ipairs(linkInfo.bonusIDs) do
-        if VOIDFORGED_BONUS_IDS[tonumber(bonusID)] then
+        if wanted[tonumber(bonusID)] then
             return true
         end
     end
@@ -150,7 +175,9 @@ local function findUpgradeTrackText(text)
 end
 
 local function getUpgradeTrack(data)
-    if isVoidforgedItem(data) then return "Void" end
+    if hasAnyBonusID(data, VOIDFORGED_BONUS_IDS) then return "Void" end
+    if hasAnyBonusID(data, VENOMCURSED_BONUS_IDS) then return "Venom" end
+    if hasAnyBonusID(data, CORROSIVE_BONUS_IDS) then return "Corrosive" end
 
     if not C_TooltipInfo or not C_TooltipInfo.GetBagItem then return nil end
     if not data.bagid or not data.slotid then return nil end
@@ -158,11 +185,13 @@ local function getUpgradeTrack(data)
     local tooltipData = C_TooltipInfo.GetBagItem(data.bagid, data.slotid)
     if not tooltipData or not tooltipData.lines then return nil end
 
-    -- Sporefused ("Sporefused: Myth") and season-crafted ("Radiance Crafted")
-    -- gear has no ItemUpgradeLevel line, so those are matched on plain tooltip
-    -- text. Sporefused tooltips can also carry a "Mythic" difficulty line, so
-    -- Spore/Craft win over a track hit. Line 1 is skipped: that's the item
-    -- name, and an item can be *named* "Sporefused ..." without being one.
+    -- Sporefused ("Sporefused: Myth") and season-crafted ("Radiance Crafted",
+    -- "Tidal Crafted") gear has no ItemUpgradeLevel line, so those are matched
+    -- on plain tooltip text. These tooltips can also carry a "Mythic"
+    -- difficulty line, so the special tags win over a track hit. The
+    -- Venomcursed find is a fallback for cantrip variants Blizzard adds after
+    -- the bonus ID table above. Line 1 is skipped: that's the item name, and
+    -- an item can be *named* "Sporefused ..." without being one.
     local trackFromLine
     for i, line in ipairs(tooltipData.lines) do
         if i > 1 and line.leftText then
@@ -170,6 +199,7 @@ local function getUpgradeTrack(data)
             -- even multiple visual lines (the Sporefused line arrives as
             -- "Mythic\nSporefused: Myth"), so end-anchored patterns like
             -- "Crafted$" never match ("...Crafted|r").
+            if line.leftText:find("Venomcursed", 1, true) then return "Venom" end
             if line.leftText:find("Sporefused", 1, true) then return "Spore" end
             if line.leftText:find("Crafted", 1, true) then return "Craft" end
         end
