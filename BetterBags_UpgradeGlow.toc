@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120100, 120105
 ## Title: BetterBags - Upgrade Glow
 ## Notes: Highlights bag ilvl upgrades and shows item upgrade track badges.
 ## Author: Hydrospanners
