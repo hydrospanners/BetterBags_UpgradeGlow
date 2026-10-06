@@ -2,6 +2,12 @@
 
 All notable changes to BetterBags - Upgrade Glow are listed here.
 
+## [1.5.2]
+
+- The "Void" badge is now "Asc" in violet. Season 2 gear upgraded with
+  Ascendant Venomstones gets it too, since the game marks it the same way as
+  Season 1 Voidforged gear. Your own badge text or colour for it is kept.
+
 ## [1.5.1]
 
 - Marked compatible with patch 12.1.5. No behavior changes.

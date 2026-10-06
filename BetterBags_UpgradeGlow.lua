@@ -29,6 +29,9 @@ local BADGE_POINTS = {
 }
 
 -- Ascendant Voidforged bonus IDs (Midnight 12.x); see ChonkyCharacterSheet gearDB for reference.
+-- Season 2 Ascendant Venomstones reuse these IDs (no new tag in 12.1.5 data),
+-- so the badge says "Asc" and fits both seasons. The key stays "Void" so
+-- saved renames and recolours carry over.
 local VOIDFORGED_BONUS_IDS = {
     [13653] = true, -- Hero-track Voidforged
     [13654] = true, -- Myth-track Voidforged
@@ -64,7 +67,7 @@ local TRACKS = {
     Champion = { label = "Champ", color = { 0.75, 0.45, 1.00 } },
     Hero = { label = "Hero", color = { 1.00, 0.55, 0.15 } },
     Myth = { label = "Myth", color = { 1.00, 0.20, 0.20 } },
-    Void = { label = "Void", color = { 0.55, 0.20, 0.85 } },
+    Void = { label = "Asc", title = "Ascendant", color = { 0.70, 0.20, 0.95 } },
     Spore = { label = "Spore", color = { 0.15, 0.65, 0.30 } },
     Venom = { label = "Venom", color = { 0.65, 1.00, 0.25 } },
     Corrosive = { label = "Corr", color = { 0.10, 0.75, 0.55 } },
@@ -520,7 +523,7 @@ local trackSwatches = {}
 -- separate colour row rather than dropping the control.
 local function addTrackRow(f, name)
     f:AddInputBox({
-        title = name,
+        title = TRACKS[name].title or name,
         description = "",
         getValue = function() return trackLabel(name) end,
         setValue = function(_, value)
@@ -532,7 +535,7 @@ local function addTrackRow(f, name)
     local container = config.configFrame.layout and config.configFrame.layout.nextFrame
     if not container or not container.input then
         addAlignedColor(f, {
-            title = name .. " colour",
+            title = (TRACKS[name].title or name) .. " colour",
             description = "",
             getValue = function()
                 local r, g, b, a = trackColor(name)

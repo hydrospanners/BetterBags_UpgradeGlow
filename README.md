@@ -20,7 +20,7 @@ Venomcursed, Corrosive, season-crafted).
   level — they don't affect your gear.
 - Small colored track badge (Adv / Champ / Hero / Myth) in the item corner,
   read from the item's upgrade tooltip line.
-- Special gear gets its own badge: "Void" (Ascendant Voidforged), "Spore"
+- Special gear gets its own badge: "Asc" (Ascendant Voidforged and Venomstone upgrades), "Spore"
   (Sporefused), "Craft" (season-crafted), "Venom" (Venomcursed), and "Corr"
   (Corrosive, the other Venomous Abyss cantrip items).
 - Updates live as you equip gear; persists through the bag "clear recent" action.
