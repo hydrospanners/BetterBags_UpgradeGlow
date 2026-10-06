@@ -2,6 +2,10 @@
 
 All notable changes to BetterBags - Upgrade Glow are listed here.
 
+## [1.5.1]
+
+- Marked compatible with patch 12.1.5. No behavior changes.
+
 ## [1.5.0]
 
 - New badges for the special gear from The Venomous Abyss: Venomcursed cantrip
